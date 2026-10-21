@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DAB+ Ensemble Telemetry & Monitor</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-red: #ef4444;
+      --code-bg: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .badge {
+      background-color: var(--border-color);
+      color: var(--accent);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-family: monospace;
+    }
+
+    /* Channel Selector Styling */
+    .channel-selector-container {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .channel-selector-header {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .channel-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .btn-chan {
+      background-color: var(--bg-color);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 10px;
+      font-size: 0.85rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: monospace;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .btn-chan:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-chan.active {
+      background-color: #0284c7;
+      border-color: var(--accent);
+      color: #ffffff;
+      font-weight: bold;
+    }
+
+    .btn-chan:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .status-message {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .grid-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .stat-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .table-container {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      background-color: rgba(0, 0, 0, 0.2);
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background-color: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+      font-size: 0.85rem;
+    }
+
+    .dls-text {
+      color: #e2e8f0;
+      font-style: italic;
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+      background-color: var(--accent-green);
+    }
+
+    .status-dot.offline {
+      background-color: var(--accent-red);
+    }
+
+    .error-banner {
+      display: none;
+      background-color: rgba(239, 68, 68, 0.1);
+      border: 1px solid var(--accent-red);
+      color: var(--accent-red);
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1 id="ensemble-name">DAB+ Monitor</h1>
+      <span class="stat-sub" id="last-updated">Connecting to receiver...</span>
+    </div>
+    <div>
+      <span class="status-dot" id="status-indicator"></span>
+      <span class="badge" id="ensemble-id">EID: --</span>
+    </div>
+  </header>
+
+  <div id="error-banner" class="error-banner"></div>
+
+  <!-- Channel Tuning Bar -->
+  <section class="channel-selector-container">
+    <div class="channel-selector-header">
+      <span>Channel Tuning</span>
+      <span id="tune-status" class="status-message">Select a channel to tune</span>
+    </div>
+    <div class="channel-buttons" id="channel-bar"></div>
+  </section>
+
+  <section class="grid-stats">
+    <div class="stat-card">
+      <div class="stat-label">Signal (SNR)</div>
+      <div class="stat-value" id="val-snr">-- dB</div>
+      <div class="stat-sub" id="val-fic">FIC CRC: --</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Tuned Frequency</div>
+      <div class="stat-value" id="val-freq">-- MHz</div>
+      <div class="stat-sub" id="val-offset">Offset: -- Hz</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Transmitter (TII)</div>
+      <div class="stat-value" id="val-tii">-- / --</div>
+      <div class="stat-sub" id="val-tii-sub">Pattern / Comb</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Active Services</div>
+      <div class="stat-value" id="val-services-count">--</div>
+      <div class="stat-sub">100% CU Capacity</div>
+    </div>
+  </section>
+
+  <section class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>SID</th>
+          <th>Station Name</th>
+          <th>Bitrate / Codec</th>
+          <th>SubChannel (CU)</th>
+          <th>Dynamic Label Segment (DLS)</th>
+        </tr>
+      </thead>
+      <tbody id="services-tbody">
+        <tr>
+          <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">
+            Awaiting telemetry payload from <code>/mux.json</code>...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <script>
+    // VHF DAB Band III Channels
+    const DAB_CHANNELS = [
+      "5A", "5B", "5C", "5D", "6A", "6B", "6C", "6D",
+      "7A", "7B", "7C", "7D", "8A", "8B", "8C", "8D",
+      "9A", "9B", "9C", "9D", "10A", "10B", "10C", "10D",
+      "11A", "11B", "11C", "11D", "12A", "12B", "12C", "12D",
+      "13A", "13B", "13C", "13D", "13E", "13F"
+    ];
+
+    let activeChannel = "";
+
+    function renderChannelBar() {
+      const container = document.getElementById('channel-bar');
+      container.innerHTML = DAB_CHANNELS.map(ch => `
+        <button class="btn-chan" id="btn-chan-${ch}" onclick="tuneChannel('${ch}')">${ch}</button>
+      `).join('');
+    }
+
+    async function tuneChannel(channel) {
+      const statusElem = document.getElementById('tune-status');
+      const buttons = document.querySelectorAll('.btn-chan');
+      
+      try {
+        statusElem.textContent = `Tuning to channel ${channel}...`;
+        buttons.forEach(b => b.disabled = true);
+
+        const response = await fetch('/channel', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain'
+          },
+          body: channel
+        });
+
+        if (response.ok) {
+          activeChannel = channel;
+          updateActiveButton(channel);
+          statusElem.textContent = `Successfully tuned to channel ${channel}`;
+          
+          // Trigger immediate poll update
+          setTimeout(fetchMuxData, 500);
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      } catch (err) {
+        console.error("Failed to tune channel:", err);
+        statusElem.textContent = `Error tuning to ${channel}: ${err.message}`;
+      } finally {
+        buttons.forEach(b => b.disabled = false);
+      }
+    }
+
+    function updateActiveButton(channel) {
+      document.querySelectorAll('.btn-chan').forEach(btn => {
+        btn.classList.toggle('active', btn.id === `btn-chan-${channel}`);
+      });
+    }
+
+    /**
+     * Precision parser for welle.io / welle-cli mux.json telemetry schema
+     */
+    function parseMuxJson(rawData) {
+      if (!rawData || typeof rawData !== 'object') {
+        throw new Error("Received payload is not a valid JSON object.");
+      }
+
+      // Safe string extraction handling nested welle label/dls objects
+      const safeStr = (val, fallback = "") => {
+        if (val === null || val === undefined) return fallback;
+        if (typeof val === 'string') return val;
+        if (typeof val === 'number') return String(val);
+        if (typeof val === 'object') {
+          return val.label ?? val.text ?? val.name ?? val.value ?? fallback;
+        }
+        return fallback;
+      };
+
+      // Hex conversion WITHOUT the "0x" prefix (returns clean "8008", "83D1", etc.)
+      const toCleanHexStr = (val, padLen = 4) => {
+        if (val === undefined || val === null) return "0000";
+        let strVal = String(val).trim();
+        if (strVal.startsWith('0x') || strVal.startsWith('0X')) {
+          strVal = strVal.slice(2);
+        }
+        const num = parseInt(strVal, 16);
+        return isNaN(num) ? "0000" : num.toString(16).padStart(padLen, '0').toUpperCase();
+      };
+
+      // 1. Resolve Ensemble EID and Label
+      const ensObj = rawData.ensemble ?? {};
+      const ensembleIdRaw = ensObj.id ?? "0000";
+      const ensembleLabelRaw = safeStr(ensObj.label, "Unknown Ensemble");
+
+      // 2. Resolve Demodulator & Signal Telemetry
+      const demod = rawData.demodulator ?? {};
+      const snrVal = demod.snr ?? 0;
+      const offsetVal = demod.frequencycorrection ?? demod.frequency_offset ?? 0;
+      const ficErrorsVal = demod.fic?.numcrcerrors ?? demod.numcrcerrors ?? 0;
+      
+      // Frequency (Optional or hardcoded fallback if welle-cli omits it)
+      const freqVal = rawData.frequency ?? rawData.freq ?? demod.frequency ?? 0;
+      const formatFreq = (freq) => {
+        if (!freq) return "--";
+        const num = typeof freq === 'string' ? parseFloat(freq) : freq;
+        return num > 1000000 ? (num / 1000000).toFixed(3) : num.toFixed(3);
+      };
+
+      // Resolve TII Array
+      const tiiList = Array.isArray(rawData.tii) ? rawData.tii : [];
+      const mainTii = tiiList[0] ?? {};
+      const tiiPattern = mainTii.pattern ?? "--";
+      const tiiComb = mainTii.comb ?? "--";
+
+      // 3. Resolve Services Array
+      const rawServices = Array.isArray(rawData.services) ? rawData.services : [];
+
+      const normalizedServices = rawServices.map((svc) => {
+        const sidRaw = svc.sid ?? 0;
+        const rawName = safeStr(svc.label, "Unknown");
+        const rawDls = safeStr(svc.dls, "");
+
+        // Extract subchannel properties from components[0].subchannel
+        const primaryComponent = Array.isArray(svc.components) ? svc.components[0] : {};
+        const subCh = primaryComponent.subchannel ?? svc.subchannel ?? {};
+
+        const bitrate = subCh.bitrate ?? svc.bitrate ?? 0;
+        const startCu = subCh.sad ?? subCh.start_cu ?? 0;
+        const cuSize = subCh.cu ?? subCh.cu_size ?? 0;
+        const subchannelId = subCh.subchid ?? subCh.id ?? 0;
+
+        // Parse codec mode string (e.g., "HE-AAC, 48 kHz Stereo @ 64 kbit/s" -> "HE-AAC")
+        let codec = "AAC";
+        if (svc.mode && typeof svc.mode === 'string') {
+          codec = svc.mode.split(',')[0].trim();
+        } else if (subCh.protection) {
+          codec = subCh.protection;
+        }
+
+        return {
+          sid: toCleanHexStr(sidRaw, 4),
+          name: String(rawName).trim(),
+          bitrate: bitrate,
+          codec: codec,
+          subchannelId: subchannelId,
+          startCu: startCu,
+          cuSize: cuSize,
+          dlsText: String(rawDls).trim()
+        };
+      });
+
+      return {
+        ensemble: {
+          id: toCleanHexStr(ensembleIdRaw, 4),
+          label: String(ensembleLabelRaw).trim()
+        },
+        signal: {
+          snr: typeof snrVal === 'number' ? snrVal : parseFloat(snrVal) || 0,
+          frequency: formatFreq(freqVal),
+          freqOffset: offsetVal,
+          ficErrors: ficErrorsVal,
+          tiiPattern: tiiPattern,
+          tiiComb: tiiComb
+        },
+        services: normalizedServices
+      };
+    }
+
+    async function fetchMuxData() {
+      const errorBanner = document.getElementById('error-banner');
+      const statusIndicator = document.getElementById('status-indicator');
+
+      try {
+        const response = await fetch('/mux.json', { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const rawJson = await response.json();
+        const data = parseMuxJson(rawJson);
+
+        // Hide error banner and show active status
+        errorBanner.style.display = 'none';
+        statusIndicator.classList.remove('offline');
+
+        // Update Header & General Metadata
+        document.getElementById('ensemble-name').textContent = data.ensemble.label;
+        document.getElementById('ensemble-id').textContent = `EID: ${data.ensemble.id}`;
+        document.getElementById('last-updated').textContent = `Last sync: ${new Date().toLocaleTimeString()}`;
+
+        // Update Stats
+        document.getElementById('val-snr').textContent = `${data.signal.snr.toFixed(1)} dB`;
+        document.getElementById('val-fic').textContent = `FIC CRC Errors: ${data.signal.ficErrors}`;
+        document.getElementById('val-freq').textContent = `${data.signal.frequency} MHz`;
+        document.getElementById('val-offset').textContent = `Offset: ${data.signal.freqOffset} Hz`;
+        document.getElementById('val-tii').textContent = `${data.signal.tiiPattern} / ${data.signal.tiiComb}`;
+        document.getElementById('val-services-count').textContent = data.services.length;
+
+        // Render Table Body
+        const tbody = document.getElementById('services-tbody');
+        if (data.services.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">No active services found in ensemble.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = data.services.map(svc => `
+          <tr>
+            <td><code>${svc.sid}</code></td>
+            <td><strong>${svc.name}</strong></td>
+            <td>${svc.bitrate} kbps <span style="color: var(--text-muted); font-size: 0.8rem;">(${svc.codec})</span></td>
+            <td>SubCh ${svc.subchannelId} <span style="color: var(--text-muted); font-size: 0.8rem;">(CU ${svc.startCu}, ${svc.cuSize} CUs)</span></td>
+            <td class="dls-text">${svc.dlsText ? svc.dlsText : '<span style="color: var(--text-muted);">-</span>'}</td>
+          </tr>
+        `).join('');
+
+      } catch (err) {
+        console.error("Dashboard update failed:", err);
+        statusIndicator.classList.add('offline');
+        errorBanner.style.display = 'block';
+        errorBanner.textContent = `Telemetry connection error: ${err.message}. Retrying...`;
+      }
+    }
+
+    // Init channel bar and polling loop
+    renderChannelBar();
+    fetchMuxData();
+    setInterval(fetchMuxData, 1000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+services:
+  dabtuner:
+    build: .
+    container_name: dabtuner
+    privileged: true
+#    network_mode: host
+    environment:
+      - DAB_CHANNEL=11C
+      - DAB_GAIN=40.2
+      - DAB_PORT=8008
+      - DAB_APP_PORT=8009
+      - DAB_DRIVER=auto
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb
+      - /opt/dabtuner/images:/usr/share/uhd/images
+    ports:
+      - "8008:8008"
+      - "8009:8009"
+    restart: unless-stopped

@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DAB+ Ensemble Telemetry & Monitor</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-red: #ef4444;
+      --code-bg: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Channel Selector Styling */
+    .channel-selector-container {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .channel-selector-header {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .channel-groups {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    @media (min-width: 1024px) {
+      .channel-groups {
+        grid-template-columns: repeat(2, 1fr);
+        column-gap: 24px;
+      }
+    }
+
+    .channel-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .channel-group-label {
+      font-family: monospace;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: var(--accent);
+      min-width: 55px;
+      text-align: right;
+    }
+
+    .channel-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .btn-chan {
+      background-color: var(--bg-color);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 5px 9px;
+      font-size: 0.85rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: monospace;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .btn-chan:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-chan.active {
+      background-color: #0284c7;
+      border-color: var(--accent);
+      color: #ffffff;
+      font-weight: bold;
+    }
+
+    .btn-chan:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .status-message {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .grid-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stat-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Media Player Block */
+    .player-block {
+      background-color: var(--card-bg);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+      display: none;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .player-block.active {
+      display: block;
+    }
+
+    .player-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 10px;
+    }
+
+    .player-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--accent);
+    }
+
+    .player-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .player-close:hover {
+      color: var(--text-main);
+    }
+
+    .player-content {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      align-items: center;
+    }
+
+    /* MOT Slideshow Thumbnail & Hover Zoom */
+    .mot-container {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      background-color: var(--bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .mot-img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      cursor: zoom-in;
+      transition: transform 0.2s ease-in-out;
+    }
+
+    /* Full-size MOT Overlay Modal */
+    .mot-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      cursor: zoom-out;
+    }
+
+    .mot-modal img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.8);
+    }
+
+    .player-controls {
+      flex: 1;
+      min-width: 250px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .player-nowplaying {
+      font-size: 0.95rem;
+      color: var(--text-main);
+    }
+
+    .audio-visualizer-container {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 48px;
+      background: var(--bg-color);
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      width: 100%;
+    }
+
+    .viz-bar {
+      flex: 1;
+      background-color: var(--accent);
+      height: 10%;
+      border-radius: 2px 2px 0 0;
+      transition: height 0.1s ease;
+    }
+
+    .audio-element-custom {
+      width: 100%;
+      height: 36px;
+      outline: none;
+    }
+
+    .table-container {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      background-color: rgba(0, 0, 0, 0.2);
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background-color: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+      font-size: 0.85rem;
+    }
+
+    .dls-text {
+      color: #e2e8f0;
+      font-style: italic;
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--accent-green);
+    }
+
+    .status-dot.offline {
+      background-color: var(--accent-red);
+    }
+
+    .error-banner {
+      display: none;
+      background-color: rgba(239, 68, 68, 0.1);
+      border: 1px solid var(--accent-red);
+      color: var(--accent-red);
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+    }
+
+    .btn-play {
+      background-color: rgba(56, 189, 248, 0.1);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 4px 10px;
+      font-size: 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+
+    .btn-play:hover {
+      background-color: var(--accent);
+      color: #000;
+    }
+
+    .table-mot-thumb {
+      width: 32px;
+      height: 32px;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      vertical-align: middle;
+      cursor: zoom-in;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1 id="header-title">DAB+ Monitor</h1>
+      <span class="stat-sub" id="last-updated">Connecting to receiver...</span>
+    </div>
+    <div class="header-status">
+      <span class="status-dot" id="status-indicator"></span>
+    </div>
+  </header>
+
+  <div id="error-banner" class="error-banner"></div>
+
+  <!-- Grouped Channel Tuning Bar -->
+  <section class="channel-selector-container">
+    <div class="channel-selector-header">
+      <span>Channel Tuning</span>
+      <span id="tune-status" class="status-message">Select a channel to tune</span>
+    </div>
+    <div class="channel-groups" id="channel-groups-container"></div>
+  </section>
+
+  <!-- Telemetry Summary Cards -->
+  <section class="grid-stats">
+    <!-- Box 1: Ensemble ID & Label -->
+    <div class="stat-card">
+      <div class="stat-label">Ensemble ID</div>
+      <div class="stat-value" id="val-eid">0x----</div>
+      <div class="stat-sub" id="val-ensemble-label">Ensemble: --</div>
+    </div>
+    <!-- Box 2: Signal (SNR) -->
+    <div class="stat-card">
+      <div class="stat-label">Signal (SNR)</div>
+      <div class="stat-value" id="val-snr">-- dB</div>
+      <div class="stat-sub" id="val-fic">FIC CRC: --</div>
+    </div>
+    <!-- Box 3: Tuned Frequency -->
+    <div class="stat-card">
+      <div class="stat-label">Tuned Frequency</div>
+      <div class="stat-value" id="val-freq">-- MHz</div>
+      <div class="stat-sub" id="val-offset">Offset: -- Hz</div>
+    </div>
+    <!-- Box 4: Transmitter (TII) -->
+    <div class="stat-card">
+      <div class="stat-label">Transmitter (TII)</div>
+      <div class="stat-value" id="val-tii">-- / --</div>
+      <div class="stat-sub" id="val-tii-sub">Pattern / Comb</div>
+    </div>
+    <!-- Box 5: Active Services -->
+    <div class="stat-card">
+      <div class="stat-label">Active Services</div>
+      <div class="stat-value" id="val-services-count">--</div>
+      <div class="stat-sub">100% CU Capacity</div>
+    </div>
+  </section>
+
+  <!-- Interactive Media Player Block -->
+  <section id="player-block" class="player-block">
+    <div class="player-header">
+      <div class="player-title" id="player-station-name">Now Playing</div>
+      <button class="player-close" onclick="closePlayer()">&times;</button>
+    </div>
+    <div class="player-content">
+      <!-- MOT Slideshow Display -->
+      <div class="mot-container">
+        <img id="player-mot-img" class="mot-img" src="" alt="MOT Slideshow" onclick="openMotModal(this.src)" />
+      </div>
+
+      <!-- Player & Audio Bars -->
+      <div class="player-controls">
+        <div class="player-nowplaying">
+          <strong id="player-sid-label">SID: 0x0000</strong> &bull; <span id="player-dls-text" class="dls-text">Awaiting dynamic label...</span>
+        </div>
+
+        <!-- Audio Visualizer Bars -->
+        <div class="audio-visualizer-container" id="visualizer">
+          <div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div>
+          <div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div>
+          <div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div>
+          <div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div>
+        </div>
+
+        <audio id="audio-player" class="audio-element-custom" controls autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- MOT Zoom Modal -->
+  <div id="mot-modal" class="mot-modal" onclick="closeMotModal()">
+    <img id="mot-modal-img" src="" alt="Fullsize MOT Slideshow" />
+  </div>
+
+  <section class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Play</th>
+          <th>MOT</th>
+          <th>SID</th>
+          <th>Station Name</th>
+          <th>Bitrate / Codec</th>
+          <th>SubChannel (CU)</th>
+          <th>Dynamic Label Segment (DLS)</th>
+        </tr>
+      </thead>
+      <tbody id="services-tbody">
+        <tr>
+          <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">
+            Awaiting telemetry payload from <code>/mux.json</code>...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <script>
+    const DAB_GROUPS = [
+      {
+        name: "VHF 5",
+        channels: [
+          { code: "5A", freqHz: 174928000 },
+          { code: "5B", freqHz: 176640000 },
+          { code: "5C", freqHz: 178352000 },
+          { code: "5D", freqHz: 180064000 }
+        ]
+      },
+      {
+        name: "VHF 6",
+        channels: [
+          { code: "6A", freqHz: 181936000 },
+          { code: "6B", freqHz: 183648000 },
+          { code: "6C", freqHz: 185360000 },
+          { code: "6D", freqHz: 187072000 }
+        ]
+      },
+      {
+        name: "VHF 7",
+        channels: [
+          { code: "7A", freqHz: 188928000 },
+          { code: "7B", freqHz: 190640000 },
+          { code: "7C", freqHz: 192352000 },
+          { code: "7D", freqHz: 194064000 }
+        ]
+      },
+      {
+        name: "VHF 8",
+        channels: [
+          { code: "8A", freqHz: 195936000 },
+          { code: "8B", freqHz: 197648000 },
+          { code: "8C", freqHz: 199360000 },
+          { code: "8D", freqHz: 201072000 }
+        ]
+      },
+      {
+        name: "VHF 9",
+        channels: [
+          { code: "9A", freqHz: 202928000 },
+          { code: "9B", freqHz: 204640000 },
+          { code: "9C", freqHz: 206352000 },
+          { code: "9D", freqHz: 208064000 }
+        ]
+      },
+      {
+        name: "VHF 10",
+        channels: [
+          { code: "10A", freqHz: 209936000 },
+          { code: "10B", freqHz: 211648000 },
+          { code: "10C", freqHz: 213360000 },
+          { code: "10D", freqHz: 215072000 }
+        ]
+      },
+      {
+        name: "VHF 11",
+        channels: [
+          { code: "11A", freqHz: 216928000 },
+          { code: "11B", freqHz: 218640000 },
+          { code: "11C", freqHz: 220352000 },
+          { code: "11D", freqHz: 222064000 }
+        ]
+      },
+      {
+        name: "VHF 12",
+        channels: [
+          { code: "12A", freqHz: 223936000 },
+          { code: "12B", freqHz: 225648000 },
+          { code: "12C", freqHz: 227360000 },
+          { code: "12D", freqHz: 229072000 }
+        ]
+      },
+      {
+        name: "VHF 13",
+        channels: [
+          { code: "13A", freqHz: 230784000 },
+          { code: "13B", freqHz: 232496000 },
+          { code: "13C", freqHz: 234208000 },
+          { code: "13D", freqHz: 235776000 },
+          { code: "13E", freqHz: 237488000 },
+          { code: "13F", freqHz: 239200000 }
+        ]
+      }
+    ];
+
+    const CHANNEL_FREQ_MAP = {};
+    DAB_GROUPS.forEach(g => {
+      g.channels.forEach(ch => {
+        CHANNEL_FREQ_MAP[ch.code] = ch.freqHz;
+      });
+    });
+
+    let activeChannel = "";
+    let activeServiceSid = null;
+    let vizInterval = null;
+
+    function renderChannelBar() {
+      const container = document.getElementById('channel-groups-container');
+      container.innerHTML = DAB_GROUPS.map(group => `
+        <div class="channel-row">
+          <div class="channel-group-label">${group.name}</div>
+          <div class="channel-buttons">
+            ${group.channels.map(ch => `
+              <button class="btn-chan" id="btn-chan-${ch.code}" onclick="tuneChannel('${ch.code}')">${ch.code}</button>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function tuneChannel(channel) {
+      const statusElem = document.getElementById('tune-status');
+      const buttons = document.querySelectorAll('.btn-chan');
+      
+      try {
+        statusElem.textContent = `Tuning to channel ${channel}...`;
+        buttons.forEach(b => b.disabled = true);
+
+        const baseHz = CHANNEL_FREQ_MAP[channel];
+        if (baseHz) {
+          document.getElementById('val-freq').textContent = `${(baseHz / 1e6).toFixed(3)} MHz`;
+          document.getElementById('val-offset').textContent = `Base: ${(baseHz / 1e6).toFixed(3)} MHz | Offset: -- Hz`;
+        }
+
+        const response = await fetch('/channel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: channel
+        });
+
+        if (response.ok) {
+          activeChannel = channel;
+          updateActiveButton(channel);
+          statusElem.textContent = `Successfully tuned to channel ${channel}`;
+          setTimeout(fetchMuxData, 500);
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      } catch (err) {
+        console.error("Failed to tune channel:", err);
+        statusElem.textContent = `Error tuning to ${channel}: ${err.message}`;
+      } finally {
+        buttons.forEach(b => b.disabled = false);
+      }
+    }
+
+    function updateActiveButton(channel) {
+      document.querySelectorAll('.btn-chan').forEach(btn => {
+        btn.classList.toggle('active', btn.id === `btn-chan-${channel}`);
+      });
+    }
+
+    function playService(sid, name) {
+      activeServiceSid = sid;
+      const playerBlock = document.getElementById('player-block');
+      const audioPlayer = document.getElementById('audio-player');
+      
+      document.getElementById('player-station-name').textContent = name;
+      document.getElementById('player-sid-label').textContent = `SID: 0x${sid}`;
+      
+      // Load audio stream endpoint (mp3/aac stream per SID)
+      audioPlayer.src = `/stream/${sid}`;
+      audioPlayer.play().catch(e => console.log("Autoplay blocked or stream connecting...", e));
+
+      playerBlock.classList.add('active');
+      startVisualizer();
+    }
+
+    function closePlayer() {
+      const playerBlock = document.getElementById('player-block');
+      const audioPlayer = document.getElementById('audio-player');
+      audioPlayer.pause();
+      audioPlayer.src = "";
+      playerBlock.classList.remove('active');
+      activeServiceSid = null;
+      stopVisualizer();
+    }
+
+    function startVisualizer() {
+      stopVisualizer();
+      const bars = document.querySelectorAll('.viz-bar');
+      vizInterval = setInterval(() => {
+        bars.forEach(bar => {
+          const height = Math.floor(Math.random() * 85) + 15;
+          bar.style.height = `${height}%`;
+        });
+      }, 120);
+    }
+
+    function stopVisualizer() {
+      if (vizInterval) clearInterval(vizInterval);
+      const bars = document.querySelectorAll('.viz-bar');
+      bars.forEach(bar => bar.style.height = '10%');
+    }
+
+    function openMotModal(src) {
+      if (!src) return;
+      document.getElementById('mot-modal-img').src = src;
+      document.getElementById('mot-modal').style.display = 'flex';
+    }
+
+    function closeMotModal() {
+      document.getElementById('mot-modal').style.display = 'none';
+    }
+
+    function parseMuxJson(rawData) {
+      if (!rawData || typeof rawData !== 'object') {
+        throw new Error("Received payload is not a valid JSON object.");
+      }
+
+      const safeStr = (val, fallback = "") => {
+        if (val === null || val === undefined) return fallback;
+        if (typeof val === 'string') return val;
+        if (typeof val === 'number') return String(val);
+        if (typeof val === 'object') {
+          return val.label ?? val.text ?? val.name ?? val.value ?? val.url ?? val.src ?? val.path ?? fallback;
+        }
+        return fallback;
+      };
+
+      const toCleanHexStr = (val, padLen = 4) => {
+        if (val === undefined || val === null) return "0000";
+        let strVal = String(val).trim();
+        if (strVal.startsWith('0x') || strVal.startsWith('0X')) {
+          strVal = strVal.slice(2);
+        }
+        const num = parseInt(strVal, 16);
+        return isNaN(num) ? "0000" : num.toString(16).padStart(padLen, '0').toUpperCase();
+      };
+
+      const ensObj = rawData.ensemble ?? {};
+      const ensembleIdRaw = ensObj.id ?? "0000";
+      const ensembleLabelRaw = safeStr(ensObj.label, "Unknown Ensemble");
+
+      const demod = rawData.demodulator ?? {};
+      const snrVal = demod.snr ?? 0;
+      const offsetVal = demod.frequencycorrection ?? demod.frequency_offset ?? 0;
+      const ficErrorsVal = demod.fic?.numcrcerrors ?? demod.numcrcerrors ?? 0;
+      
+      let baseFreqHz = 0;
+      const rawFreq = rawData.frequency ?? rawData.freq ?? demod.frequency;
+      if (rawFreq) {
+        baseFreqHz = typeof rawFreq === 'string' ? parseFloat(rawFreq) : rawFreq;
+        if (baseFreqHz < 1000) baseFreqHz *= 1e6;
+      } else if (activeChannel && CHANNEL_FREQ_MAP[activeChannel]) {
+        baseFreqHz = CHANNEL_FREQ_MAP[activeChannel];
+      }
+
+      let correctedFreqMHz = "--";
+      let baseFreqMHz = "--";
+      if (baseFreqHz > 0) {
+        baseFreqMHz = (baseFreqHz / 1e6).toFixed(3);
+        const actualHz = baseFreqHz + (typeof offsetVal === 'number' ? offsetVal : parseFloat(offsetVal) || 0);
+        correctedFreqMHz = (actualHz / 1e6).toFixed(6);
+      }
+
+      const tiiList = Array.isArray(rawData.tii) ? rawData.tii : [];
+      const mainTii = tiiList[0] ?? {};
+      const tiiPattern = mainTii.pattern ?? "--";
+      const tiiComb = mainTii.comb ?? "--";
+
+      const rawServices = Array.isArray(rawData.services) ? rawData.services : [];
+
+      const normalizedServices = rawServices.map((svc) => {
+        const sidRaw = svc.sid ?? 0;
+        const cleanSid = toCleanHexStr(sidRaw, 4);
+        const rawName = safeStr(svc.label, "Unknown");
+        const rawDls = safeStr(svc.dls, "");
+        
+        // Robust MOT image source extraction
+        const rawMot = svc.mot ?? svc.slideshow ?? svc.picture;
+        let motUrl = `/mot/${cleanSid}.png`;
+
+        if (typeof rawMot === 'string' && rawMot.trim().length > 0) {
+          motUrl = rawMot.trim();
+        } else if (rawMot && typeof rawMot === 'object') {
+          motUrl = rawMot.url || rawMot.src || rawMot.path || `/mot/${cleanSid}.png`;
+        }
+
+        const primaryComponent = Array.isArray(svc.components) ? svc.components[0] : {};
+        const subCh = primaryComponent.subchannel ?? svc.subchannel ?? {};
+
+        const bitrate = subCh.bitrate ?? svc.bitrate ?? 0;
+        const startCu = subCh.sad ?? subCh.start_cu ?? 0;
+        const cuSize = subCh.cu ?? subCh.cu_size ?? 0;
+        const subchannelId = subCh.subchid ?? subCh.id ?? 0;
+
+        let codec = "AAC";
+        if (svc.mode && typeof svc.mode === 'string') {
+          codec = svc.mode.split(',')[0].trim();
+        } else if (subCh.protection) {
+          codec = subCh.protection;
+        }
+
+        return {
+          sid: cleanSid,
+          name: String(rawName).trim(),
+          bitrate: bitrate,
+          codec: codec,
+          subchannelId: subchannelId,
+          startCu: startCu,
+          cuSize: cuSize,
+          dlsText: String(rawDls).trim(),
+          motUrl: motUrl
+        };
+      });
+
+      return {
+        ensemble: {
+          id: toCleanHexStr(ensembleIdRaw, 4),
+          label: String(ensembleLabelRaw).trim()
+        },
+        signal: {
+          snr: typeof snrVal === 'number' ? snrVal : parseFloat(snrVal) || 0,
+          baseFreqMHz: baseFreqMHz,
+          correctedFreqMHz: correctedFreqMHz,
+          freqOffset: offsetVal,
+          ficErrors: ficErrorsVal,
+          tiiPattern: tiiPattern,
+          tiiComb: tiiComb
+        },
+        services: normalizedServices
+      };
+    }
+
+    async function fetchMuxData() {
+      const errorBanner = document.getElementById('error-banner');
+      const statusIndicator = document.getElementById('status-indicator');
+
+      try {
+        const response = await fetch('/mux.json', { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const rawJson = await response.json();
+        const data = parseMuxJson(rawJson);
+
+        errorBanner.style.display = 'none';
+        statusIndicator.classList.remove('offline');
+
+        document.getElementById('last-updated').textContent = `Last sync: ${new Date().toLocaleTimeString()}`;
+
+        document.getElementById('val-eid').textContent = `0x${data.ensemble.id}`;
+        document.getElementById('val-ensemble-label').textContent = `Ensemble: ${data.ensemble.label}`;
+
+        document.getElementById('val-snr').textContent = `${data.signal.snr.toFixed(1)} dB`;
+        document.getElementById('val-fic').textContent = `FIC CRC Errors: ${data.signal.ficErrors}`;
+        
+        if (data.signal.correctedFreqMHz !== "--") {
+          document.getElementById('val-freq').textContent = `${data.signal.correctedFreqMHz} MHz`;
+          const sign = data.signal.freqOffset >= 0 ? '+' : '';
+          document.getElementById('val-offset').textContent = `Base: ${data.signal.baseFreqMHz} MHz | Offset: ${sign}${data.signal.freqOffset} Hz`;
+        } else {
+          document.getElementById('val-freq').textContent = `-- MHz`;
+          document.getElementById('val-offset').textContent = `Offset: ${data.signal.freqOffset} Hz`;
+        }
+
+        document.getElementById('val-tii').textContent = `${data.signal.tiiPattern} / ${data.signal.tiiComb}`;
+
+        document.getElementById('val-services-count').textContent = data.services.length;
+
+        // Update playing metadata live if player is active
+        if (activeServiceSid) {
+          const currentSvc = data.services.find(s => s.sid === activeServiceSid);
+          if (currentSvc) {
+            document.getElementById('player-dls-text').textContent = currentSvc.dlsText || 'No text broadcast';
+            document.getElementById('player-mot-img').src = currentSvc.motUrl;
+          }
+        }
+
+        const tbody = document.getElementById('services-tbody');
+        if (data.services.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">No active services found in ensemble.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = data.services.map(svc => `
+          <tr>
+            <td>
+              <button class="btn-play" onclick="playService('${svc.sid}', '${svc.name.replace(/'/g, "\\'")}')">
+                &#9654; Play
+              </button>
+            </td>
+            <td>
+              <img src="${svc.motUrl}" alt="MOT" class="table-mot-thumb" onclick="openMotModal('${svc.motUrl}')" onerror="this.style.opacity=0.3" />
+            </td>
+            <td><code>${svc.sid}</code></td>
+            <td><strong>${svc.name}</strong></td>
+            <td>${svc.bitrate} kbps <span style="color: var(--text-muted); font-size: 0.8rem;">(${svc.codec})</span></td>
+            <td>SubCh ${svc.subchannelId} <span style="color: var(--text-muted); font-size: 0.8rem;">(CU ${svc.startCu}, ${svc.cuSize} CUs)</span></td>
+            <td class="dls-text">${svc.dlsText ? svc.dlsText : '<span style="color: var(--text-muted);">-</span>'}</td>
+          </tr>
+        `).join('');
+
+      } catch (err) {
+        console.error("Dashboard update failed:", err);
+        statusIndicator.classList.add('offline');
+        errorBanner.style.display = 'block';
+        errorBanner.textContent = `Telemetry connection error: ${err.message}. Retrying...`;
+      }
+    }
+
+    renderChannelBar();
+    fetchMuxData();
+    setInterval(fetchMuxData, 1000);
+  </script>
+</body>
+</html>

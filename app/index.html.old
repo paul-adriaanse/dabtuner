@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAB Diagnostics Matrix</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0b0f19; color: #f1f5f9; padding: 25px; }
+        .grid { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; max-width: 1000px; margin: 0 auto; }
+        .card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+        h2 { color: #38bdf8; margin-top: 0; font-size: 18px; border-bottom: 1px solid #1f2937; padding-bottom: 8px; }
+        .metric { display: flex; justify-content: space-between; margin: 12px 0; font-size: 14px; }
+        .metric span.value { font-family: monospace; color: #10b981; font-weight: bold; }
+        .station-row { background: #1f2937; padding: 12px; margin: 8px 0; border-radius: 6px; display: flex; justify-content: space-between; cursor: pointer; border: 1px solid transparent; }
+        .station-row:hover { border-color: #38bdf8; }
+        .tech-spec { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+        audio { width: 100%; margin-top: 15px; border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+<h1 style="text-align:center; color:#38bdf8; font-size:24px; margin-bottom:30px;">DAB+ Telemetry Dashboard</h1>
+
+<div class="grid">
+    <!-- Left Column: Signal Status Metrics -->
+    <div class="card">
+        <h2>RF Signal Metrics</h2>
+        <div class="metric"><span>SNR (Signal-to-Noise Ratio):</span> <span class="value" id="rf-snr">-- dB</span></div>
+        <div class="metric"><span>Ensemble Frequency:</span> <span class="value" id="rf-freq">-- MHz</span></div>
+        <div class="metric"><span>FIC Quality Check:</span> <span class="value" id="rf-fic">-- %</span></div>
+        <div class="metric"><span>Sync Lock State:</span> <span class="value" id="rf-sync">LOCKED</span></div>
+        
+        <h2 style="margin-top:30px;">Live Player Node</h2>
+        <audio id="livePlayer" controls autoplay></audio>
+    </div>
+
+    <!-- Right Column: Extracted Digital Subchannels -->
+    <div class="card">
+        <h2>Active Ensemble Subchannels</h2>
+        <div id="station-box">
+            <!-- Mock example generated dynamically from data packets -->
+            <div class="station-row" onclick="tuneAudio('1')">
+                <div>
+                    <strong>📻 NPO Radio 1</strong>
+                    <div class="tech-spec">Codec: AAC-HEv2 | FEC: EEP-3A (Code Rate 1/2)</div>
+                </div>
+                <div style="text-align:right;"><span class="value">96 kbps</span></div>
+            </div>
+            <div class="station-row" onclick="tuneAudio('2')">
+                <div>
+                    <strong>📻 Qmusic NL</strong>
+                    <div class="tech-spec">Codec: AAC-HEv1 | FEC: EEP-3B (Code Rate 2/3)</div>
+                </div>
+                <div style="text-align:right;"><span class="value">72 kbps</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Automatically poll the backend diagnostics API loop
+    async function fetchTelemetry() {
+        try {
+            const res = await fetch('/mux.json');
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}`);
+            }
+            const data = await res.json();
+            
+            // Map live incoming payload packets directly onto user elements
+            if (data.snr !== undefined) {
+                document.getElementById('rf-snr').innerText = Number(data.snr).toFixed(1) + " dB";
+            }
+            if (data.ficQuality !== undefined) {
+                document.getElementById('rf-fic').innerText = data.ficQuality + " %";
+            }
+            if (data.frequency !== undefined) {
+                document.getElementById('rf-freq').innerText = (data.frequency / 1000000).toFixed(3) + " MHz";
+            }
+        } catch(e) {
+            console.error("Failed to fetch data:", e);
+            document.getElementById('rf-snr').innerText = "ERROR";
+            document.getElementById('rf-fic').innerText = "--";
+            document.getElementById('rf-freq').innerText = "--";
+        }
+    }
+
+    function tuneAudio(streamId) {
+        const player = document.getElementById('livePlayer');
+        player.src = 'http://' + window.location.hostname + ':8008/mp3/' + streamId;
+        player.play();
+    }
+
+    setInterval(fetchTelemetry, 1000);
+    fetchTelemetry();
+</script>
+</body>
+</html>
+
